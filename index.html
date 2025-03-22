@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enregistrement des terminaux eLTE</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jsPDF et SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    <style>
+        .btn-custom {
+            margin: 5px;
+        }
+
+        .card-form {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <div class="container">
+            <div class="d-flex align-items-center flex-wrap">
+                <img src="image/DGTI.png" alt="Image" class="img-fluid" style="max-width: 150px; height: auto;">
+                <h1 class="text-center mb-4 ml-3" style="font-size: 1.5rem; flex-grow: 1; text-align: left;">
+                    Enregistrement des terminaux eLTE
+                </h1>
+            </div>
+        </div>
+        
+
+
+        <!-- Section principale avec formulaire et recherche -->
+        <div class="row">
+            <!-- Formulaire d'enregistrement dans une carte -->
+            <div class="col-md-8">
+                <div class="card card-form">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title">Formulaire d'enregistrement</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="registrationForm">
+                            <div class="mb-3">
+                                <label for="imei" class="form-label">IMEI :</label>
+                                <input type="text" id="imei" name="imei" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="numeroAppel" class="form-label">Numéro d'appel :</label>
+                                <input type="text" id="numeroAppel" name="numeroAppel" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modele" class="form-label">Modèle :</label>
+                                <select id="modele" name="modele" class="form-select" required>
+                                    <option value="">Sélectionnez un modèle</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="entite" class="form-label">Entité dotée :</label>
+                                <select id="entite" name="entite" class="form-select" required>
+                                    <option value="">Sélectionnez une entité</option>
+                                </select>
+                            </div>
+                            <button type="submit" id="submitButton"
+                                class="btn btn-success btn-custom">Enregistrer</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Boutons pour afficher et exporter les enregistrements -->
+                <div class="mt-4">
+                    <button id="afficherEnregistrements" class="btn btn-warning btn-custom">Afficher tous les
+                        enregistrements</button>
+                    <button id="exporterPDF" class="btn btn-danger btn-custom">Exporter en PDF</button>
+                    <button id="exporterXLS" class="btn btn-success btn-custom">Exporter en XLS</button>
+                </div>
+
+                <!-- Tableau des enregistrements -->
+                <div class="table-responsive mt-4">
+                    <table id="enregistrementsTable" class="table table-bordered table-striped" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Numéro d'ordre</th>
+                                <th>IMEI</th>
+                                <th>Numéro d'appel</th>
+                                <th>Modèle</th>
+                                <th>Entité dotée</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="enregistrementsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recherche et gestion des modèles et entités dans une carte -->
+            <div class="col-md-4">
+                <!-- Recherche par IMEI -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title">Rechercher par IMEI</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="searchImei" class="form-label">Entrez l'IMEI :</label>
+                            <input type="text" id="searchImei" class="form-control" placeholder="Ex: 123456789">
+                        </div>
+                        <button id="searchButton" class="btn btn-primary btn-custom">Rechercher</button>
+                    </div>
+                </div>
+
+                <!-- Gestion des modèles -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title">Gestion des modèles</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="modeleForm">
+                            <div class="mb-3">
+                                <label for="nouveauModele" class="form-label">Nouveau modèle :</label>
+                                <input type="text" id="nouveauModele" class="form-control" placeholder="Ex: Modèle X"
+                                    required>
+                            </div>
+                            <button type="submit" class="btn btn-secondary btn-custom">Ajouter</button>
+                        </form>
+                        <hr>
+                        <div class="mb-3">
+                            <label for="selectModele" class="form-label">Modifier ou supprimer un modèle :</label>
+                            <select id="selectModele" class="form-select">
+                                <option value="">Sélectionnez un modèle</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="modifierModele" class="btn btn-warning btn-custom">Modifier</button>
+                            <button id="supprimerModele" class="btn btn-danger btn-custom">Supprimer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gestion des entités dotées -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title">Gestion des entités dotées</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="entiteForm">
+                            <div class="mb-3">
+                                <label for="nouvelleEntite" class="form-label">Nouvelle entité :</label>
+                                <input type="text" id="nouvelleEntite" class="form-control" placeholder="Ex: Entité A"
+                                    required>
+                            </div>
+                            <button type="submit" class="btn btn-secondary btn-custom">Ajouter</button>
+                        </form>
+                        <hr>
+                        <div class="mb-3">
+                            <label for="selectEntite" class="form-label">Modifier ou supprimer une entité :</label>
+                            <select id="selectEntite" class="form-select">
+                                <option value="">Sélectionnez une entité</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="modifierEntite" class="btn btn-warning btn-custom">Modifier</button>
+                            <button id="supprimerEntite" class="btn btn-danger btn-custom">Supprimer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS et dépendances -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+    <script>
+        // Ouvrir ou créer la base de données IndexedDB
+        const dbName = "TerminauxeLTEDB";
+        const dbVersion = 3; // Version augmentée pour ajouter la table des entités
+        let db;
+
+        const request = indexedDB.open(dbName, dbVersion);
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+
+            // Créer la table pour les terminaux eLTE
+            if (!db.objectStoreNames.contains("terminaux")) {
+                const terminauxStore = db.createObjectStore("terminaux", { keyPath: "imei" });
+                terminauxStore.createIndex("numeroAppel", "numeroAppel", { unique: true });
+                terminauxStore.createIndex("modele", "modele", { unique: false });
+                terminauxStore.createIndex("entite", "entite", { unique: false });
+            }
+
+            // Créer la table pour les modèles
+            if (!db.objectStoreNames.contains("modeles")) {
+                const modelesStore = db.createObjectStore("modeles", { keyPath: "id", autoIncrement: true });
+                modelesStore.createIndex("nom", "nom", { unique: true });
+            }
+
+            // Créer la table pour les entités dotées
+            if (!db.objectStoreNames.contains("entites")) {
+                const entitesStore = db.createObjectStore("entites", { keyPath: "id", autoIncrement: true });
+                entitesStore.createIndex("nom", "nom", { unique: true });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            console.log("Base de données ouverte avec succès.");
+            chargerModeles(); // Charger les modèles au démarrage
+            chargerEntites(); // Charger les entités au démarrage
+        };
+
+        request.onerror = (event) => {
+            console.error("Erreur lors de l'ouverture de la base de données :", event.target.error);
+        };
+
+        // Charger les modèles dans les menus déroulants
+        function chargerModeles() {
+            const transaction = db.transaction(["modeles"], "readonly");
+            const objectStore = transaction.objectStore("modeles");
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const modeles = request.result;
+                const selectModele = document.getElementById("modele");
+                const selectModeleGestion = document.getElementById("selectModele");
+
+                selectModele.innerHTML = '<option value="">Sélectionnez un modèle</option>';
+                selectModeleGestion.innerHTML = '<option value="">Sélectionnez un modèle</option>';
+
+                modeles.forEach((modele) => {
+                    const option = document.createElement("option");
+                    option.value = modele.nom;
+                    option.textContent = modele.nom;
+                    option.dataset.id = modele.id; // Stocker l'ID pour la gestion
+                    selectModele.appendChild(option.cloneNode(true));
+                    selectModeleGestion.appendChild(option);
+                });
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors du chargement des modèles :", event.target.error);
+            };
+        }
+
+        // Charger les entités dans les menus déroulants
+        function chargerEntites() {
+            const transaction = db.transaction(["entites"], "readonly");
+            const objectStore = transaction.objectStore("entites");
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const entites = request.result;
+                const selectEntite = document.getElementById("entite");
+                const selectEntiteGestion = document.getElementById("selectEntite");
+
+                selectEntite.innerHTML = '<option value="">Sélectionnez une entité</option>';
+                selectEntiteGestion.innerHTML = '<option value="">Sélectionnez une entité</option>';
+
+                entites.forEach((entite) => {
+                    const option = document.createElement("option");
+                    option.value = entite.nom;
+                    option.textContent = entite.nom;
+                    option.dataset.id = entite.id; // Stocker l'ID pour la gestion
+                    selectEntite.appendChild(option.cloneNode(true));
+                    selectEntiteGestion.appendChild(option);
+                });
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors du chargement des entités :", event.target.error);
+            };
+        }
+
+        // Ajouter un nouveau modèle
+        document.getElementById("modeleForm").addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const nouveauModele = document.getElementById("nouveauModele").value.trim();
+
+            if (!nouveauModele) {
+                alert("Veuillez entrer un nom de modèle.");
+                return;
+            }
+
+            const transaction = db.transaction(["modeles"], "readwrite");
+            const objectStore = transaction.objectStore("modeles");
+            const request = objectStore.add({ nom: nouveauModele });
+
+            request.onsuccess = () => {
+                alert("Modèle ajouté avec succès !");
+                document.getElementById("modeleForm").reset();
+                chargerModeles(); // Recharger les modèles
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de l'ajout du modèle :", event.target.error);
+                alert("Erreur : Ce modèle existe déjà.");
+            };
+        });
+
+        // Modifier un modèle
+        document.getElementById("modifierModele").addEventListener("click", () => {
+            const selectModele = document.getElementById("selectModele");
+            const selectedOption = selectModele.options[selectModele.selectedIndex];
+
+            if (!selectedOption.value) {
+                alert("Veuillez sélectionner un modèle à modifier.");
+                return;
+            }
+
+            const nouveauNom = prompt("Entrez le nouveau nom du modèle :", selectedOption.value);
+
+            if (nouveauNom && nouveauNom.trim()) {
+                const transaction = db.transaction(["modeles"], "readwrite");
+                const objectStore = transaction.objectStore("modeles");
+                const request = objectStore.get(Number(selectedOption.dataset.id));
+
+                request.onsuccess = () => {
+                    const modele = request.result;
+                    modele.nom = nouveauNom.trim();
+
+                    const updateRequest = objectStore.put(modele);
+
+                    updateRequest.onsuccess = () => {
+                        alert("Modèle modifié avec succès !");
+                        chargerModeles(); // Recharger les modèles
+                    };
+
+                    updateRequest.onerror = (event) => {
+                        console.error("Erreur lors de la modification du modèle :", event.target.error);
+                        alert("Erreur : Ce modèle existe déjà.");
+                    };
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erreur lors de la récupération du modèle :", event.target.error);
+                };
+            }
+        });
+
+        // Supprimer un modèle
+        document.getElementById("supprimerModele").addEventListener("click", () => {
+            const selectModele = document.getElementById("selectModele");
+            const selectedOption = selectModele.options[selectModele.selectedIndex];
+
+            if (!selectedOption.value) {
+                alert("Veuillez sélectionner un modèle à supprimer.");
+                return;
+            }
+
+            if (confirm(`Êtes-vous sûr de vouloir supprimer le modèle "${selectedOption.value}" ?`)) {
+                const transaction = db.transaction(["modeles"], "readwrite");
+                const objectStore = transaction.objectStore("modeles");
+                const request = objectStore.delete(Number(selectedOption.dataset.id));
+
+                request.onsuccess = () => {
+                    alert("Modèle supprimé avec succès !");
+                    chargerModeles(); // Recharger les modèles
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erreur lors de la suppression du modèle :", event.target.error);
+                };
+            }
+        });
+
+        // Ajouter une nouvelle entité
+        document.getElementById("entiteForm").addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const nouvelleEntite = document.getElementById("nouvelleEntite").value.trim();
+
+            if (!nouvelleEntite) {
+                alert("Veuillez entrer un nom d'entité.");
+                return;
+            }
+
+            const transaction = db.transaction(["entites"], "readwrite");
+            const objectStore = transaction.objectStore("entites");
+            const request = objectStore.add({ nom: nouvelleEntite });
+
+            request.onsuccess = () => {
+                alert("Entité ajoutée avec succès !");
+                document.getElementById("entiteForm").reset();
+                chargerEntites(); // Recharger les entités
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de l'ajout de l'entité :", event.target.error);
+                alert("Erreur : Cette entité existe déjà.");
+            };
+        });
+
+        // Modifier une entité
+        document.getElementById("modifierEntite").addEventListener("click", () => {
+            const selectEntite = document.getElementById("selectEntite");
+            const selectedOption = selectEntite.options[selectEntite.selectedIndex];
+
+            if (!selectedOption.value) {
+                alert("Veuillez sélectionner une entité à modifier.");
+                return;
+            }
+
+            const nouveauNom = prompt("Entrez le nouveau nom de l'entité :", selectedOption.value);
+
+            if (nouveauNom && nouveauNom.trim()) {
+                const transaction = db.transaction(["entites"], "readwrite");
+                const objectStore = transaction.objectStore("entites");
+                const request = objectStore.get(Number(selectedOption.dataset.id));
+
+                request.onsuccess = () => {
+                    const entite = request.result;
+                    entite.nom = nouveauNom.trim();
+
+                    const updateRequest = objectStore.put(entite);
+
+                    updateRequest.onsuccess = () => {
+                        alert("Entité modifiée avec succès !");
+                        chargerEntites(); // Recharger les entités
+                    };
+
+                    updateRequest.onerror = (event) => {
+                        console.error("Erreur lors de la modification de l'entité :", event.target.error);
+                        alert("Erreur : Cette entité existe déjà.");
+                    };
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erreur lors de la récupération de l'entité :", event.target.error);
+                };
+            }
+        });
+
+        // Supprimer une entité
+        document.getElementById("supprimerEntite").addEventListener("click", () => {
+            const selectEntite = document.getElementById("selectEntite");
+            const selectedOption = selectEntite.options[selectEntite.selectedIndex];
+
+            if (!selectedOption.value) {
+                alert("Veuillez sélectionner une entité à supprimer.");
+                return;
+            }
+
+            if (confirm(`Êtes-vous sûr de vouloir supprimer l'entité "${selectedOption.value}" ?`)) {
+                const transaction = db.transaction(["entites"], "readwrite");
+                const objectStore = transaction.objectStore("entites");
+                const request = objectStore.delete(Number(selectedOption.dataset.id));
+
+                request.onsuccess = () => {
+                    alert("Entité supprimée avec succès !");
+                    chargerEntites(); // Recharger les entités
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erreur lors de la suppression de l'entité :", event.target.error);
+                };
+            }
+        });
+
+        // Enregistrer ou mettre à jour les données dans IndexedDB
+        document.getElementById("registrationForm").addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const imei = document.getElementById("imei").value;
+            const numeroAppel = document.getElementById("numeroAppel").value;
+            const modele = document.getElementById("modele").value;
+            const entite = document.getElementById("entite").value;
+
+            if (!db) {
+                alert("La base de données n'est pas encore prête. Veuillez réessayer.");
+                return;
+            }
+
+            const transaction = db.transaction(["terminaux"], "readwrite");
+            const objectStore = transaction.objectStore("terminaux");
+
+            const enregistrement = {
+                imei,
+                numeroAppel,
+                modele,
+                entite,
+            };
+
+            // Vérifier si le numéro d'appel est déjà utilisé par un autre enregistrement
+            const index = objectStore.index("numeroAppel");
+            const checkRequest = index.get(numeroAppel);
+
+            checkRequest.onsuccess = () => {
+                const existingRecord = checkRequest.result;
+
+                if (existingRecord && existingRecord.imei !== imei) {
+                    alert("Erreur : Le numéro d'appel est déjà utilisé par un autre enregistrement.");
+                    return;
+                }
+
+                // Mettre à jour ou ajouter l'enregistrement
+                const request = objectStore.put(enregistrement);
+
+                request.onsuccess = () => {
+                    alert("Enregistrement sauvegardé avec succès !");
+                    document.getElementById("registrationForm").reset();
+                    document.getElementById("imei").removeAttribute("readonly"); // Réactiver l'IMEI pour les nouveaux enregistrements
+                    document.getElementById("submitButton").textContent = "Enregistrer"; // Réinitialiser le bouton
+                    afficherEnregistrements(); // Rafraîchir la liste
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erreur lors de la sauvegarde :", event.target.error);
+                    alert("Erreur lors de la sauvegarde.");
+                };
+            };
+
+            checkRequest.onerror = (event) => {
+                console.error("Erreur lors de la vérification du numéro d'appel :", event.target.error);
+                alert("Erreur lors de la vérification du numéro d'appel.");
+            };
+        });
+
+        // Afficher tous les enregistrements
+        function afficherEnregistrements() {
+            if (!db) {
+                alert("La base de données n'est pas encore prête. Veuillez réessayer.");
+                return;
+            }
+
+            const transaction = db.transaction(["terminaux"], "readonly");
+            const objectStore = transaction.objectStore("terminaux");
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const enregistrements = request.result;
+                const tbody = document.getElementById("enregistrementsBody");
+                tbody.innerHTML = "";
+
+                // Ajouter un numéro d'ordre incrémenté
+                enregistrements.forEach((enregistrement, index) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${enregistrement.imei}</td>
+                        <td>${enregistrement.numeroAppel}</td>
+                        <td>${enregistrement.modele}</td>
+                        <td>${enregistrement.entite}</td>
+                        <td>
+                            <button onclick="modifierEnregistrement('${enregistrement.imei}')" class="btn btn-primary btn-sm btn-custom">Modifier</button>
+                            <button onclick="supprimerEnregistrement('${enregistrement.imei}')" class="btn btn-danger btn-sm btn-custom">Supprimer</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById("enregistrementsTable").style.display = "table";
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de la récupération des enregistrements :", event.target.error);
+                alert("Erreur lors de la récupération des enregistrements.");
+            };
+        }
+
+        document.getElementById("afficherEnregistrements").addEventListener("click", afficherEnregistrements);
+
+        // Rechercher par IMEI
+        document.getElementById("searchButton").addEventListener("click", () => {
+            const searchImei = document.getElementById("searchImei").value.trim();
+
+            if (!searchImei) {
+                alert("Veuillez entrer un IMEI pour la recherche.");
+                return;
+            }
+
+            if (!db) {
+                alert("La base de données n'est pas encore prête. Veuillez réessayer.");
+                return;
+            }
+
+            const transaction = db.transaction(["terminaux"], "readonly");
+            const objectStore = transaction.objectStore("terminaux");
+            const request = objectStore.get(searchImei);
+
+            request.onsuccess = () => {
+                const enregistrement = request.result;
+                const tbody = document.getElementById("enregistrementsBody");
+                tbody.innerHTML = "";
+
+                if (enregistrement) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>1</td> <!-- Numéro d'ordre pour la recherche -->
+                        <td>${enregistrement.imei}</td>
+                        <td>${enregistrement.numeroAppel}</td>
+                        <td>${enregistrement.modele}</td>
+                        <td>${enregistrement.entite}</td>
+                        <td>
+                            <button onclick="modifierEnregistrement('${enregistrement.imei}')" class="btn btn-primary btn-sm btn-custom">Modifier</button>
+                            <button onclick="supprimerEnregistrement('${enregistrement.imei}')" class="btn btn-danger btn-sm btn-custom">Supprimer</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                } else {
+                    alert("Aucun enregistrement trouvé pour cet IMEI.");
+                }
+
+                document.getElementById("enregistrementsTable").style.display = "table";
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de la recherche :", event.target.error);
+                alert("Erreur lors de la recherche.");
+            };
+        });
+
+        // Modifier un enregistrement
+        function modifierEnregistrement(imei) {
+            const transaction = db.transaction(["terminaux"], "readonly");
+            const objectStore = transaction.objectStore("terminaux");
+            const request = objectStore.get(imei);
+
+            request.onsuccess = () => {
+                const enregistrement = request.result;
+                if (enregistrement) {
+                    // Remplir le formulaire avec les données existantes
+                    document.getElementById("imei").value = enregistrement.imei;
+                    document.getElementById("numeroAppel").value = enregistrement.numeroAppel;
+                    document.getElementById("modele").value = enregistrement.modele;
+                    document.getElementById("entite").value = enregistrement.entite;
+
+                    // Désactiver l'IMEI pour éviter la modification
+                    document.getElementById("imei").setAttribute("readonly", true);
+
+                    // Changer le bouton "Enregistrer" en "Mettre à jour"
+                    document.getElementById("submitButton").textContent = "Mettre à jour";
+                } else {
+                    alert("Enregistrement non trouvé.");
+                }
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de la récupération de l'enregistrement :", event.target.error);
+                alert("Erreur lors de la récupération de l'enregistrement.");
+            };
+        }
+
+        // Supprimer un enregistrement
+        function supprimerEnregistrement(imei) {
+            if (confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
+                const transaction = db.transaction(["terminaux"], "readwrite");
+                const objectStore = transaction.objectStore("terminaux");
+                const request = objectStore.delete(imei);
+
+                request.onsuccess = () => {
+                    alert("Enregistrement supprimé avec succès !");
+                    afficherEnregistrements(); // Rafraîchir la liste
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erreur lors de la suppression :", event.target.error);
+                    alert("Erreur lors de la suppression.");
+                };
+            }
+        }
+
+        // Exporter en PDF
+        document.getElementById("exporterPDF").addEventListener("click", () => {
+            const transaction = db.transaction(["terminaux"], "readonly");
+            const objectStore = transaction.objectStore("terminaux");
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const enregistrements = request.result;
+
+                const doc = new jspdf.jsPDF();
+                doc.text("Liste des terminaux eLTE", 10, 10);
+
+                let y = 20;
+                enregistrements.forEach((enregistrement, index) => {
+                    doc.text(
+                        `${index + 1}. IMEI: ${enregistrement.imei}, Numéro d'appel: ${enregistrement.numeroAppel}, Modèle: ${enregistrement.modele}, Entité: ${enregistrement.entite}`,
+                        10,
+                        y
+                    );
+                    y += 10;
+                });
+
+                doc.save("terminaux_eLTE.pdf");
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de la récupération des enregistrements :", event.target.error);
+                alert("Erreur lors de la récupération des enregistrements.");
+            };
+        });
+
+        // Exporter en XLS
+        document.getElementById("exporterXLS").addEventListener("click", () => {
+            const transaction = db.transaction(["terminaux"], "readonly");
+            const objectStore = transaction.objectStore("terminaux");
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const enregistrements = request.result;
+
+                // Convertir les données en tableau
+                const data = enregistrements.map((enregistrement) => [
+                    enregistrement.imei,
+                    enregistrement.numeroAppel,
+                    enregistrement.modele,
+                    enregistrement.entite,
+                ]);
+
+                // Ajouter les en-têtes
+                data.unshift(["IMEI", "Numéro d'appel", "Modèle", "Entité dotée"]);
+
+                // Créer un classeur et une feuille
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Terminaux eLTE");
+
+                // Exporter en fichier XLS
+                XLSX.writeFile(wb, "terminaux_eLTE.xlsx");
+            };
+
+            request.onerror = (event) => {
+                console.error("Erreur lors de la récupération des enregistrements :", event.target.error);
+                alert("Erreur lors de la récupération des enregistrements.");
+            };
+        });
+    </script>
+</body>
+
+</html>
